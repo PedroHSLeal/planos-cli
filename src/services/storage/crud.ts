@@ -62,6 +62,13 @@ export function createTaskStorage(database: Database) {
       return rows.map(toTaskRow);
     },
 
+    async getOldestTaskByTitle(task: string): Promise<TaskRow | undefined> {
+      const row = database
+        .query("SELECT id, task, section, extras FROM Tasks WHERE task = ? ORDER BY id ASC LIMIT 1")
+        .get(task) as DatabaseTaskRow | null;
+      return row ? toTaskRow(row) : undefined;
+    },
+
     async addTaskToSection(section: KnownSection, task: string, extras: Extras = {}): Promise<number> {
       const result = database
         .query("INSERT INTO Tasks (task, section, extras) VALUES (?, ?, ?)")
@@ -123,6 +130,10 @@ function getDefaultStorage() {
 
 export async function getTasks() {
   return getDefaultStorage().getTasks();
+}
+
+export async function getOldestTaskByTitle(task: string) {
+  return getDefaultStorage().getOldestTaskByTitle(task);
 }
 
 export async function addTaskToSection(section: KnownSection, task: string, extras?: Extras) {

@@ -42,6 +42,19 @@ describe("SQLite task storage", () => {
     expect(await storage.getTasks()).toEqual([]);
   });
 
+  test("finds the oldest task when titles are duplicated", async () => {
+    const storage = createTestStorage();
+    const oldestId = await storage.addTaskToSection("backlog", "same title", { notes: "old" });
+    await storage.addTaskToSection("backlog", "same title", { notes: "new" });
+
+    expect(await storage.getOldestTaskByTitle("same title")).toEqual({
+      id: oldestId,
+      task: "same title",
+      section: TASK_SECTION.backlog,
+      extras: { notes: "old" },
+    });
+  });
+
   test("inserts rows with integer sections and descending IDs", async () => {
     const storage = createTestStorage();
 
@@ -100,6 +113,32 @@ describe("SQLite task storage", () => {
     expect(await storage.getTasks()).toEqual([
       { id, task: "after", section: TASK_SECTION.doing, extras: { notes: "updated" } },
     ]);
+  });
+
+  test("replaces notes by ID while preserving other extras", async () => {
+    const storage = createTestStorage();
+    const id = await storage.addTaskToSection("doing", "with notes", {
+      notes: "before",
+      startedAt: new Date("2026-08-14T10:00:00.000Z"),
+      custom: "keep",
+    });
+    const task = await storage.getOldestTaskByTitle("with notes");
+
+    await storage.updateTask(id, {
+      extras: {
+        ...task!.extras,
+        notes: "after",
+      },
+    });
+
+    expect((await storage.getOldestTaskByTitle("with notes"))?.extras).toEqual({
+      notes: "after",
+      startedAt: new Date("2026-08-14T10:00:00.000Z"),
+      custom: "keep",
+    });
+
+    await storage.updateTask(id, { extras: { ...task!.extras, notes: "" } });
+    expect((await storage.getOldestTaskByTitle("with notes"))?.extras.notes).toBe("");
   });
 
   test("reports missing task and ID errors", async () => {
