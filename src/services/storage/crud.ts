@@ -1,106 +1,146 @@
-import { access, writeFile, readFile, mkdir } from "node:fs/promises";
+import { Database } from "bun:sqlite";
 
-import { BASE_PATH, EMPTY_STRUCTURE, FILE_PATH, type KnownSection, type Tasks } from "./model";
-import { fromMarkdownToTasks } from "./from-markdown-to-tasks";
-import { fromTasksToMarkdown } from "./from-tasks-to-markdown";
-import { getExtra, updateExtra } from "./extras";
+import { openDatabase } from "./database";
+import { deserializeExtras, serializeExtras } from "./extras";
+import {
+  type Extras,
+  type KnownSection,
+  type TaskRow,
+  type TaskSection,
+  type TaskUpdate,
+  TASK_SECTION,
+} from "./model";
 
-export async function getTasks(format: "raw"): Promise<string>
-export async function getTasks(format: "obj"): Promise<Tasks>
-export async function getTasks(format: "raw" | "obj") {
-  await ensureFile();
+type DatabaseTaskRow = {
+  id: number;
+  task: string;
+  section: number;
+  extras: string;
+};
 
-  switch (format) {
-    case "raw":
-      return await readTasksFile();
-    case "obj":
-      return fromMarkdownToTasks(await readTasksFile());
-    default:
-      throw new Error("unknown format to getTasks()");
-  }
-}
+const sectionValues: Record<KnownSection, TaskSection> = {
+  done: TASK_SECTION.done,
+  doing: TASK_SECTION.doing,
+  backlog: TASK_SECTION.backlog,
+};
 
-export async function saveTasks(tasks: Tasks) {
-  await writeTasksFile(tasks);
-}
-
-export async function addTaskToSection(section: KnownSection, task: string) {
-  const tasks = await getTasks("obj");
-
-  if (tasks[section]) tasks[section].unshift(task);
-  else {
-    tasks[section] = [task];
+function toTaskRow(row: DatabaseTaskRow): TaskRow {
+  if (![TASK_SECTION.done, TASK_SECTION.doing, TASK_SECTION.backlog].includes(row.section as TaskSection)) {
+    throw new Error(`Invalid task section value: ${row.section}`);
   }
 
-  await saveTasks(tasks);
+  return {
+    id: row.id,
+    task: row.task,
+    section: row.section as TaskSection,
+    extras: deserializeExtras(row.extras),
+  };
 }
 
-export async function completeTask(section: KnownSection, task: string) {
-  checkSection("doing", section);
+function firstTask(database: Database, task: string, section?: TaskSection) {
+  const query = section === undefined
+    ? "SELECT id, task, section, extras FROM Tasks WHERE task = ? ORDER BY id ASC LIMIT 1"
+    : "SELECT id, task, section, extras FROM Tasks WHERE task = ? AND section = ? ORDER BY id ASC LIMIT 1";
+  const row = section === undefined
+    ? database.query(query).get(task) as DatabaseTaskRow | null
+    : database.query(query).get(task, section) as DatabaseTaskRow | null;
+  return row;
+}
 
-  const tasks = await getTasks("obj");
+function requireTask(database: Database, task: string, section?: TaskSection) {
+  const row = firstTask(database, task, section);
+  if (!row) throw new Error(`Error: task not found: '${task}'`);
+  return row;
+}
 
-  const foundedExtra = getExtra(tasks, task);
+export function createTaskStorage(database: Database) {
+  return {
+    async getTasks(): Promise<TaskRow[]> {
+      const rows = database
+        .query("SELECT id, task, section, extras FROM Tasks ORDER BY id DESC")
+        .all() as DatabaseTaskRow[];
+      return rows.map(toTaskRow);
+    },
 
-  if (!foundedExtra) throw new Error(`Error in completing task '${task}': task not found`);
-  else {
-    foundedExtra.completedAt = new Date();
+    async addTaskToSection(section: KnownSection, task: string, extras: Extras = {}): Promise<number> {
+      const result = database
+        .query("INSERT INTO Tasks (task, section, extras) VALUES (?, ?, ?)")
+        .run(task, sectionValues[section], serializeExtras(extras));
+      return Number(result.lastInsertRowid);
+    },
 
-    updateExtra(tasks, task, foundedExtra);
+    async startTask(task: string): Promise<void> {
+      const row = requireTask(database, task, TASK_SECTION.backlog);
+      const extras = deserializeExtras(row.extras);
+      extras.startedAt = new Date();
+      database.transaction(() => {
+        database
+          .query("UPDATE Tasks SET section = ?, extras = ? WHERE id = ?")
+          .run(TASK_SECTION.doing, serializeExtras(extras), row.id);
+      })();
+    },
 
-    await saveTasks(tasks);
-  }
+    async completeTask(section: KnownSection, task: string): Promise<void> {
+      if (section !== "doing") {
+        throw new Error(`Invalid operation. KnownSection forbidden. Desired section: doing`);
+      }
 
+      const row = requireTask(database, task, TASK_SECTION.doing);
+      const extras = deserializeExtras(row.extras);
+      extras.completedAt = new Date();
+      database.transaction(() => {
+        database
+          .query("UPDATE Tasks SET section = ?, extras = ? WHERE id = ?")
+          .run(TASK_SECTION.done, serializeExtras(extras), row.id);
+      })();
+    },
+
+    async deleteTask(task: string): Promise<void> {
+      const row = requireTask(database, task);
+      database.query("DELETE FROM Tasks WHERE id = ?").run(row.id);
+    },
+
+    async updateTask(id: number, changes: TaskUpdate): Promise<void> {
+      const entries: [string, string | number][] = [];
+      if (changes.task !== undefined) entries.push(["task", changes.task]);
+      if (changes.section !== undefined) entries.push(["section", changes.section]);
+      if (changes.extras !== undefined) entries.push(["extras", serializeExtras(changes.extras)]);
+      if (entries.length === 0) throw new Error("Task update requires at least one field");
+
+      const result = database
+        .query(`UPDATE Tasks SET ${entries.map(([column]) => `${column} = ?`).join(", ")} WHERE id = ?`)
+        .run(...entries.map(([, value]) => value), id);
+      if (result.changes === 0) throw new Error(`Error: task not found: '${id}'`);
+    },
+  };
+}
+
+let defaultStorage: ReturnType<typeof createTaskStorage> | undefined;
+
+function getDefaultStorage() {
+  return defaultStorage ??= createTaskStorage(openDatabase());
+}
+
+export async function getTasks() {
+  return getDefaultStorage().getTasks();
+}
+
+export async function addTaskToSection(section: KnownSection, task: string, extras?: Extras) {
+  return getDefaultStorage().addTaskToSection(section, task, extras);
 }
 
 export async function startTask(task: string) {
-  const tasks = await getTasks("obj");
-
-  const taskAboutToStart = tasks.backlog.find(t => t == task);
-  const foundedExtra = getExtra(tasks, task);
-
-  if (!taskAboutToStart) throw new Error(`Error in starting task '${task}': task not found in 'backlog'`);
-  else {
-    foundedExtra.startedAt = new Date();
-
-    tasks.backlog.splice(tasks.backlog.indexOf(taskAboutToStart), 1);
-    tasks.doing.unshift(taskAboutToStart);
-
-    updateExtra(tasks, task, foundedExtra);
-
-    await saveTasks(tasks);
-  }
+  return getDefaultStorage().startTask(task);
 }
 
-function checkSection(desiredSection: string, section: string) {
-  if (desiredSection != section) throw new Error(`Invalid operation. KnownSection forbidden. Desired section: ${desiredSection}`);
+export async function completeTask(section: KnownSection, task: string) {
+  return getDefaultStorage().completeTask(section, task);
 }
 
-async function ensureFile(): Promise<void> {
-  try {
-    await mkdir(BASE_PATH, { recursive: true });
-    await access(FILE_PATH);
-  } catch {
-    try {
-      await writeFile(FILE_PATH, fromTasksToMarkdown(structuredClone(EMPTY_STRUCTURE)));
-    } catch (err) {
-      throw new Error(`failed to create tasks file at ${FILE_PATH}: ${(err as Error).message}`);
-    }
-  }
+export async function deleteTask(task: string) {
+  return getDefaultStorage().deleteTask(task);
 }
 
-async function readTasksFile(): Promise<string> {
-  try {
-    return await readFile(FILE_PATH, "utf8");
-  } catch (err) {
-    throw new Error(`failed to read tasks file at ${FILE_PATH}: ${(err as Error).message}`);
-  }
-}
-
-async function writeTasksFile(tasks: Tasks): Promise<void> {
-  try {
-    return await writeFile(FILE_PATH, fromTasksToMarkdown(tasks), "utf8");
-  } catch (err) {
-    throw new Error(`failed to write tasks file at ${FILE_PATH}: ${(err as Error).message}`);
-  }
+export async function updateTask(id: number, changes: TaskUpdate) {
+  return getDefaultStorage().updateTask(id, changes);
 }

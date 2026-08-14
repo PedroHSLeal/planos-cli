@@ -1,13 +1,27 @@
-import type { Extras, Tasks } from "./model";
+import type { Extras } from "./model";
 
-export function getExtra(tasks: Tasks, task: string): Extras {
-  const value = Object.entries(tasks.extras).find(([k, v]) => k == task);
-  return value?.length ? value[1] : {};
+export function serializeExtras(extras: Extras): string {
+  return JSON.stringify(extras);
 }
 
-export function updateExtra(tasks: Tasks, task: string, obj: any) {
-  const o: Record<string, any> = {};
-  o[task] = obj;
+export function deserializeExtras(value: string): Extras {
+  let parsed: unknown;
 
-  tasks.extras = { ...tasks.extras, ...o };
+  try {
+    parsed = JSON.parse(value);
+  } catch (error) {
+    throw new Error(`Invalid task extras JSON: ${(error as Error).message}`);
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("Invalid task extras JSON: expected an object");
+  }
+
+  const extras = { ...(parsed as Record<string, unknown>) } as Extras;
+
+  for (const key of ["startedAt", "completedAt"] as const) {
+    if (typeof extras[key] === "string") extras[key] = new Date(extras[key]);
+  }
+
+  return extras;
 }

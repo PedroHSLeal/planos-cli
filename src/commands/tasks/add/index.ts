@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { getTasks, addTaskToSection } from "../../../services/storage";
+import { addTaskToSection } from "../../../services/storage";
 
 export function addCommand(program: Command): void {
   program

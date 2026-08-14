@@ -1,27 +1,35 @@
-import { join } from "node:path";
 import { homedir } from "node:os";
+import { join } from "node:path";
 
 export type KnownSection = "doing" | "done" | "backlog";
+
+export const TASK_SECTION = {
+  done: 0,
+  doing: 1,
+  backlog: 2,
+} as const;
+
+export type TaskSection = (typeof TASK_SECTION)[keyof typeof TASK_SECTION];
 
 export type Extras = {
   notes?: string;
   startedAt?: Date;
   completedAt?: Date;
   [key: string]: unknown;
-}
+};
 
-export type Tasks = { [key in KnownSection]: string[] } & { extras: { [key: string]: Extras } };
+export type TaskRow = {
+  id: number;
+  task: string;
+  section: TaskSection;
+  extras: Extras;
+};
+
+export type TaskUpdate = {
+  task?: string;
+  section?: TaskSection;
+  extras?: Extras;
+};
 
 export const BASE_PATH = join(homedir(), ".config", "planos");
-export const FILE_PATH = join(BASE_PATH, "tasks.md");
-
-export const TASK_MARKER = "- [ ] ";
-export const TASK_COMPLETE_MARKER = "- [x] ";
-export const HEADER_PREFIX = "# ";
-export const SECTIONS: Record<KnownSection, string> = {
-  doing: "# DOING",
-  done: "# DONE",
-  backlog: "# BACKLOG",
-};
-export const SECTION_ORDER: KnownSection[] = ["doing", "done", "backlog"];
-export const EMPTY_STRUCTURE = { doing: [], done: [], backlog: [], extras: {} };
+export const DATABASE_PATH = join(BASE_PATH, "tasks.sqlite");
