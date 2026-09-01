@@ -1,9 +1,8 @@
 export {
-  addTaskToSection,
-  completeTask,
-  deleteTask,
+  deleteTaskById,
   getOldestTaskByTitle,
-  getTasks,
-  startTask,
+  getTaskById,
+  insertTask,
+  listTasks,
   updateTask,
-} from "./crud";
+} from "./repository";

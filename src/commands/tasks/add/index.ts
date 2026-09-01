@@ -1,11 +1,12 @@
 import type { Command } from "commander";
-import { addTaskToSection } from "../../../services/storage";
+import { insertTask } from "../../../services/storage";
 
-export function addCommand(program: Command): void {
+export default function (program: Command): void {
   program
     .command("add <task>")
+    .option("-s, --section <section>", "in which stage this task is (backlog, doing, done)", 'backlog')
     .description("add a new task")
-    .action(async (task: string) => {
-      await addTaskToSection("backlog", task);
+    .action(async (task: string, { section }) => {
+      await insertTask(section, task);
     });
 }

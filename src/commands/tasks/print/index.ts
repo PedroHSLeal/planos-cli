@@ -1,7 +1,6 @@
 import type { Command } from "commander";
 
-import { getTasks } from "../../../services/storage";
-import type { TaskRow } from "../../../services/storage/model";
+import { listTasks } from "../../../services/storage";
 import { tasksToMarkdown } from "../../../services/storage/to-markdown";
 
 export type PrintOptions = {
@@ -9,27 +8,15 @@ export type PrintOptions = {
   json?: boolean;
 };
 
-export function getPrintFormat(options: PrintOptions): "markdown" | "json" {
-  if (Boolean(options.markdown) === Boolean(options.json)) {
-    throw new Error("print requires exactly one of --markdown or --json");
-  }
-
-  return options.markdown ? "markdown" : "json";
-}
-
-export function formatTasks(tasks: TaskRow[], options: PrintOptions): string {
-  return getPrintFormat(options) === "markdown"
-    ? tasksToMarkdown(tasks)
-    : JSON.stringify(tasks);
-}
-
 export default function (program: Command): void {
   program
     .command("print", { isDefault: true })
-    .option("--markdown", "print tasks as markdown")
-    .option("--json", "print tasks as JSON")
+    .option("--markdown", "print tasks as markdown", true)
+    .option("--json", "print tasks as JSON", false)
     .description("print tasks")
     .action(async (options: PrintOptions) => {
-      console.log(formatTasks(await getTasks(), options));
+      const tasks = await listTasks();
+      if (options.json) console.log(JSON.stringify(tasks, null, 2));
+      else console.log(tasksToMarkdown(tasks));
     });
 }
