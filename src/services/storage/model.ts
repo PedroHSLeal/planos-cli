@@ -25,11 +25,7 @@ export type TaskRow = {
   extras: Extras;
 };
 
-export type TaskUpdate = {
-  task?: string;
-  section?: TaskSection;
-  extras?: Extras;
-};
+export type TaskUpdate = Partial<Omit<TaskRow, 'id'>>;
 
-export const BASE_PATH = join(homedir(), ".config", "planos");
+export const BASE_PATH = process.env.PLANOS_HOME || join(homedir(), ".config", "planos");
 export const DATABASE_PATH = join(BASE_PATH, "tasks.sqlite");

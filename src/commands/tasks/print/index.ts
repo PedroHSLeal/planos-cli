@@ -15,7 +15,7 @@ export default function (program: Command): void {
     .option("--json", "print tasks as JSON", false)
     .description("print tasks")
     .action(async (options: PrintOptions) => {
-      const tasks = await listTasks();
+      const tasks = listTasks();
       if (options.json) console.log(JSON.stringify(tasks, null, 2));
       else console.log(tasksToMarkdown(tasks));
     });

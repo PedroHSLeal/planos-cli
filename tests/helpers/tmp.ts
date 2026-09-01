@@ -1,0 +1,15 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+export function makeTempDir(): string {
+  return mkdtempSync(join(tmpdir(), "planos-test-"));
+}
+
+export function cleanupTempDir(path: string): void {
+  rmSync(path, { recursive: true, force: true });
+}
+
+export function tempDbPath(dir: string): string {
+  return join(dir, "tasks.sqlite");
+}

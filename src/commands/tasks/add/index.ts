@@ -7,6 +7,6 @@ export default function (program: Command): void {
     .option("-s, --section <section>", "in which stage this task is (backlog, doing, done)", 'backlog')
     .description("add a new task")
     .action(async (task: string, { section }) => {
-      await insertTask(section, task);
+      insertTask(section, task);
     });
 }

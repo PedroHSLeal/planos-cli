@@ -43,48 +43,48 @@ function toTaskRow(row: DatabaseTaskRow): TaskRow {
   };
 }
 
-export function listTasks(): TaskRow[] {
-  const rows = getDatabase()
+export function listTasks(database = getDatabase()): TaskRow[] {
+  const rows = database
     .query("SELECT id, task, section, extras FROM Tasks ORDER BY id DESC")
     .all() as DatabaseTaskRow[];
   return rows.map(toTaskRow);
 }
 
-export function getTaskById(id: number): TaskRow | undefined {
-  const row = getDatabase()
+export function getTaskById(id: number, database = getDatabase()): TaskRow | undefined {
+  const row = database
     .query("SELECT id, task, section, extras FROM Tasks WHERE id = ? LIMIT 1")
     .get(id) as DatabaseTaskRow | null;
   return row ? toTaskRow(row) : undefined;
 }
 
-export function getOldestTaskByTitle(title: string): TaskRow | undefined {
-  const row = getDatabase()
+export function getOldestTaskByTitle(title: string, database = getDatabase()): TaskRow | undefined {
+  const row = database
     .query("SELECT id, task, section, extras FROM Tasks WHERE task = ? ORDER BY id ASC LIMIT 1")
     .get(title) as DatabaseTaskRow | null;
   return row ? toTaskRow(row) : undefined;
 }
 
-export function insertTask(section: KnownSection, task: string, extras: Extras = {}): number {
-  const result = getDatabase()
+export function insertTask(section: KnownSection, task: string, extras: Extras = {}, database = getDatabase()): number {
+  const result = database
     .query("INSERT INTO Tasks (task, section, extras) VALUES (?, ?, ?)")
     .run(task, sectionValues[section], serializeExtras(extras));
   return Number(result.lastInsertRowid);
 }
 
-export function updateTask(id: number, changes: TaskUpdate): void {
+export function updateTask(id: number, changes: TaskUpdate, database = getDatabase()): void {
   const entries: [string, string | number][] = [];
   if (changes.task !== undefined) entries.push(["task", changes.task]);
   if (changes.section !== undefined) entries.push(["section", changes.section]);
   if (changes.extras !== undefined) entries.push(["extras", serializeExtras(changes.extras)]);
   if (entries.length === 0) throw new Error("Task update requires at least one field");
 
-  const result = getDatabase()
+  const result = database
     .query(`UPDATE Tasks SET ${entries.map(([column]) => `${column} = ?`).join(", ")} WHERE id = ?`)
     .run(...entries.map(([, value]) => value), id);
   if (result.changes === 0) throw new Error(`Error: task not found: '${id}'`);
 }
 
-export function deleteTaskById(id: number): void {
-  const result = getDatabase().query("DELETE FROM Tasks WHERE id = ?").run(id);
+export function deleteTaskById(id: number, database = getDatabase()): void {
+  const result = database.query("DELETE FROM Tasks WHERE id = ?").run(id);
   if (result.changes === 0) throw new Error(`Error: task not found: '${id}'`);
 }

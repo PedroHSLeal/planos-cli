@@ -1,7 +1,8 @@
 import { mkdirSync } from "node:fs";
 import { Database } from "bun:sqlite";
+import { dirname } from "node:path";
 
-import { BASE_PATH, DATABASE_PATH } from "./model";
+import { DATABASE_PATH } from "./model";
 
 export function initializeDatabase(database: Database): void {
   database.run(`
@@ -15,7 +16,7 @@ export function initializeDatabase(database: Database): void {
 }
 
 export function openDatabase(path = DATABASE_PATH): Database {
-  mkdirSync(BASE_PATH, { recursive: true });
+  mkdirSync(dirname(path), { recursive: true });
   const database = new Database(path);
   database.run("PRAGMA busy_timeout = 5000");
   initializeDatabase(database);

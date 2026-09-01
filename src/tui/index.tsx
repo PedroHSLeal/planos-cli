@@ -1,16 +1,27 @@
+import { createCliRenderer, type CliRendererConfig } from "@opentui/core";
 import { render } from "@opentui/solid";
 
-import { VimEditor } from "./components/VimEditor";
-import { CliRenderer, createCliRenderer } from "@opentui/core";
+import { VimEditor, type EditorProps } from "./components/VimEditor";
+import { Select, type SelectProps } from "./components/Select";
 
-export async function renderView(cb: any) {
-  const renderer = await createCliRenderer({
-    clearOnShutdown: false,
-    screenMode: "split-footer",
-    externalOutputMode: "capture-stdout",
-    footerHeight: 20,
-    exitOnCtrlC: false
-  });
+const rendererOptions: CliRendererConfig = {
+  clearOnShutdown: false,
+  screenMode: "split-footer",
+  externalOutputMode: "capture-stdout",
+  exitOnCtrlC: true,
+};
 
-  return render(() => <VimEditor onConfirmFn={cb} />, renderer);
+async function renderView(componentFn: () => unknown) {
+  const renderer = await createCliRenderer(rendererOptions);
+
+  await render(componentFn, renderer);
+  return renderer;
+}
+
+export function renderEditor(props: EditorProps) {
+  return () => <VimEditor {...props} />;
+}
+
+export function renderSelect(props: SelectProps) {
+  return () => <Select {...props} />;
 }

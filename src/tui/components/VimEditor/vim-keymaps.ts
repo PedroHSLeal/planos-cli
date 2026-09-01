@@ -1,8 +1,9 @@
 import { useKeyboard, useRenderer } from "@opentui/solid"
 import type { TextareaRenderable } from "@opentui/core"
 import { createSignal } from "solid-js"
+import type { EditorProps } from ".";
 
-export type Mode = "normal" | "insert" | "visual"
+export type Mode = "normal" | "insert" | "visual";
 
 /**
  * Self-contained vim modal keyboard controller.
@@ -11,9 +12,7 @@ export type Mode = "normal" | "insert" | "visual"
  * a status bar. The keyboard listener is registered internally via
  * `useKeyboard` (which itself hooks `onMount`).
  */
-export function useVimKeyboard(ta: () => TextareaRenderable | undefined, props: any) {
-  const renderer = useRenderer()
-
+export function useVimKeyboard(ta: () => TextareaRenderable | undefined, onConfirmFn: EditorProps["onConfirmFn"]) {
   const [mode, setMode] = createSignal<Mode>("normal")
   const [pending, setPending] = createSignal("")
   const [register, setRegister] = createSignal("")
@@ -40,9 +39,8 @@ export function useVimKeyboard(ta: () => TextareaRenderable | undefined, props: 
 
     // ── Global keys ─────────────────────────────────────────────
     if (ctrl && k === "return") {
-      props.onConfirmFn(editor.plainText);
-      renderer.destroy();
-      return
+      onConfirmFn(editor.plainText);
+      return;
     }
 
     if (k === "escape") {

@@ -11,13 +11,13 @@ export default function (program: Command): void {
       let dbTasks: any[] = [];
 
       if (task) {
-        let taskByTitle = await getOldestTaskByTitle(task);
+        let taskByTitle = getOldestTaskByTitle(task);
         if (!taskByTitle) throw new Error(`Error: task not found: '${task}'`);
 
         dbTasks.push(taskByTitle);
       }
       else {
-        dbTasks = dbTasks.concat(await listTasks());
+        dbTasks = dbTasks.concat(listTasks());
       }
 
       await renderView({ tasks: dbTasks });
