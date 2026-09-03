@@ -44,6 +44,7 @@ function View(initialProps: ViewProps) {
     }),
     editor: renderEditor({
       value: (initialProps?.tasks[0]?.extras ?? extras())?.notes ?? "",
+      enableVimMode: true,
       onConfirmFn: async (plainText) => {
         updateTask(id()!, { extras: { ...extras(), notes: plainText } })
         renderer.destroy();

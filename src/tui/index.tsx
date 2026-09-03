@@ -1,7 +1,7 @@
 import { createCliRenderer, type CliRendererConfig } from "@opentui/core";
 import { render } from "@opentui/solid";
 
-import { VimEditor, type EditorProps } from "./components/VimEditor";
+import { Editor, type EditorProps } from "./components/Editor";
 import { Select, type SelectProps } from "./components/Select";
 
 const rendererOptions: CliRendererConfig = {
@@ -19,7 +19,7 @@ async function renderView(componentFn: () => unknown) {
 }
 
 export function renderEditor(props: EditorProps) {
-  return () => <VimEditor {...props} />;
+  return () => <Editor {...props} />;
 }
 
 export function renderSelect(props: SelectProps) {
