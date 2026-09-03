@@ -12,7 +12,11 @@ export type Mode = "normal" | "insert" | "visual";
  * a status bar. The keyboard listener is registered internally via
  * `useKeyboard` (which itself hooks `onMount`).
  */
-export function useVimKeyboard(ta: () => TextareaRenderable | undefined, onConfirmFn: EditorProps["onConfirmFn"]) {
+export function useVimKeyboard(
+  ta: () => TextareaRenderable | undefined,
+  onConfirmFn: EditorProps["onConfirmFn"],
+  enableVimMode: boolean,
+) {
   const [mode, setMode] = createSignal<Mode>("normal")
   const [pending, setPending] = createSignal("")
   const [register, setRegister] = createSignal("")
@@ -25,24 +29,28 @@ export function useVimKeyboard(ta: () => TextareaRenderable | undefined, onConfi
     const editor = ta()
     if (!editor) return
 
+    const k: string = key.name ?? ""
+    const ctrl = !!key.ctrl
+
+    if (ctrl && k === "return") {
+      key.preventDefault?.()
+      onConfirmFn(editor.plainText)
+      return
+    }
+
+    if (!enableVimMode) return
+
     // Global keypress listeners run before the focused textarea's built-in
     // handler. Without this, the textarea would also process every key --
     // inserting characters in normal/visual mode and double-inserting in
     // insert mode. We fully manage input here, so swallow the default.
     key.preventDefault?.()
 
-    const k: string = key.name ?? ""
     const shift = !!key.shift
-    const ctrl = !!key.ctrl
     const m = mode()
     const p = pending()
 
     // ── Global keys ─────────────────────────────────────────────
-    if (ctrl && k === "return") {
-      onConfirmFn(editor.plainText);
-      return;
-    }
-
     if (k === "escape") {
       if (m === "insert") editor.moveCursorLeft()
       editor.clearSelection()
