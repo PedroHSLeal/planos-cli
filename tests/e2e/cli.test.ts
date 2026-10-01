@@ -15,11 +15,16 @@ afterEach(() => {
   cleanupTempDir(home);
 });
 
+// Never let a developer's Google credentials make E2E runs sync to a real account.
+const isolatedEnv = Object.fromEntries(
+  Object.entries(process.env).filter(([key]) => !key.startsWith("PLANOS_GOOGLE_")),
+);
+
 async function runCli(args: string[]): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   const proc = Bun.spawn({
     cmd: [process.execPath, "index.ts", ...args],
     cwd: repoRoot,
-    env: { ...process.env, PLANOS_HOME: home },
+    env: { ...isolatedEnv, PLANOS_HOME: home },
     stdout: "pipe",
     stderr: "pipe",
   });
@@ -59,4 +64,16 @@ test("completing a nonexistent task exits non-zero with an error", async () => {
   const result = await runCli(["complete", "does not exist"]);
   expect(result.exitCode).not.toBe(0);
   expect(result.stderr + result.stdout).toContain("task not found");
+});
+
+test("login with an unknown adapter exits non-zero with an error", async () => {
+  const result = await runCli(["login", "nope"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("unknown adapter");
+});
+
+test("login to google-tasks without an OAuth client explains what is missing", async () => {
+  const result = await runCli(["login", "google-tasks"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("PLANOS_GOOGLE_CLIENT_ID");
 });

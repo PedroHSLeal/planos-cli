@@ -13,6 +13,15 @@ export function initializeDatabase(database: Database): void {
       extras TEXT NOT NULL DEFAULT '{}'
     )
   `);
+  database.run(`
+    CREATE TABLE IF NOT EXISTS SyncLinks (
+      taskId INTEGER NOT NULL,
+      provider TEXT NOT NULL,
+      remoteListId TEXT NOT NULL,
+      remoteId TEXT NOT NULL,
+      PRIMARY KEY (taskId, provider)
+    )
+  `);
 }
 
 export function openDatabase(path = DATABASE_PATH): Database {

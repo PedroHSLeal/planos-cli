@@ -6,6 +6,7 @@ import printCommand from "./src/commands/tasks/print";
 import exportCommand from "./src/commands/tasks/export";
 import noteCommand from "./src/commands/tasks/note";
 import startCommand from "./src/commands/tasks/start";
+import loginCommand from "./src/commands/tasks/login";
 
 const program = new Command();
 
@@ -22,5 +23,6 @@ printCommand(program);
 exportCommand(program);
 noteCommand(program);
 startCommand(program);
+loginCommand(program);
 
 program.parseAsync(process.argv);

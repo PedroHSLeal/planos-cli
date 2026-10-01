@@ -26,7 +26,7 @@ const sectionValues: Record<KnownSection, TaskSection> = {
 
 let database: Database | undefined;
 
-function getDatabase(): Database {
+export function getDatabase(): Database {
   return database ??= openDatabase();
 }
 

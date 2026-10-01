@@ -3,6 +3,7 @@ import { Dynamic, render, useRenderer } from "@opentui/solid";
 
 import { updateTask } from "../../../services/storage";
 import { TASK_SECTION, type TaskRow } from "../../../services/storage/model";
+import { syncTaskUpdated } from "../../../services/sync";
 import { renderSelect } from "../../../tui";
 
 const rendererOptions: CliRendererConfig = {
@@ -32,6 +33,7 @@ function View(initialProps: ViewProps) {
     onConfirmFn: async ({ id, extras }: TaskRow) => {
       updateTask(id, { section: TASK_SECTION.doing, extras: { ...extras, startedAt: new Date() } })
       renderer.destroy();
+      await syncTaskUpdated(id);
     }
   });
 

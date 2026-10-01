@@ -1,0 +1,17 @@
+import type { TaskSyncAdapter } from "./adapter";
+import { createGoogleTasksAdapterFromConfig, GOOGLE_TASKS_PROVIDER } from "./google-tasks/adapter";
+import { resolveGoogleTasksConfig } from "./google-tasks/config";
+
+const factories: Record<string, () => TaskSyncAdapter> = {
+  [GOOGLE_TASKS_PROVIDER]: () => createGoogleTasksAdapterFromConfig(resolveGoogleTasksConfig()),
+};
+
+export const SYNC_ADAPTER_NAMES = Object.keys(factories);
+
+export function getSyncAdapter(name: string): TaskSyncAdapter {
+  const factory = factories[name];
+  if (!factory) {
+    throw new Error(`Error: unknown adapter: '${name}' (available: ${SYNC_ADAPTER_NAMES.join(", ")})`);
+  }
+  return factory();
+}
