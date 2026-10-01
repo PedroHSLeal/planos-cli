@@ -65,3 +65,15 @@ test("completing a nonexistent task exits non-zero with an error", async () => {
   expect(result.exitCode).not.toBe(0);
   expect(result.stderr + result.stdout).toContain("task not found");
 });
+
+test("login with an unknown adapter exits non-zero with an error", async () => {
+  const result = await runCli(["login", "nope"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("unknown adapter");
+});
+
+test("login to google-tasks without an OAuth client explains what is missing", async () => {
+  const result = await runCli(["login", "google-tasks"]);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain("PLANOS_GOOGLE_CLIENT_ID");
+});

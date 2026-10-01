@@ -48,6 +48,9 @@ planos complete "write the README"
 # edit task notes in a vim-style editor
 planos note "write the README"
 
+# log in to a sync adapter (see "Google Tasks sync" below)
+planos login google-tasks
+
 # print your board (markdown by default)
 planos print
 planos print --json
@@ -85,10 +88,22 @@ When configured, every change made through planos is mirrored to [Google Tasks](
 
 Each Google task gets the planos title, a `completed` status when the task is done (or has `completedAt`), and the task's whole `extras` object (notes, `startedAt`, `completedAt`, …) stored as JSON in the Google task's **notes**.
 
-Configure it with environment variables:
+### Logging in
+
+1. In the Google Cloud console, enable the **Tasks API** and create an OAuth client of type **Desktop app**.
+2. Run the login once with that client:
 
 ```sh
-# OAuth client + refresh token (scope: https://www.googleapis.com/auth/tasks)
+PLANOS_GOOGLE_CLIENT_ID=... PLANOS_GOOGLE_CLIENT_SECRET=... planos login google-tasks
+```
+
+This opens your browser (the URL is also printed), asks for the `https://www.googleapis.com/auth/tasks` scope and saves the resulting credentials to `~/.config/planos/google-tasks.json` (mode 600). After that, sync works with no environment variables.
+
+### Environment overrides
+
+Environment variables take precedence over the saved login:
+
+```sh
 export PLANOS_GOOGLE_CLIENT_ID=...
 export PLANOS_GOOGLE_CLIENT_SECRET=...
 export PLANOS_GOOGLE_REFRESH_TOKEN=...
@@ -99,8 +114,6 @@ export PLANOS_GOOGLE_ACCESS_TOKEN=...
 # optional: target task list id (defaults to your default list)
 export PLANOS_GOOGLE_TASKLIST=@default
 ```
-
-One way to get a refresh token: create an OAuth client in the Google Cloud console with the Tasks API enabled, then authorize the `https://www.googleapis.com/auth/tasks` scope in the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) using your own client credentials.
 
 ## Development
 

@@ -18,6 +18,8 @@ mock.module("../../src/services/sync", () => ({
   syncTaskUpdated: mock(async () => {}),
   syncTaskDeleted: mock(async () => {}),
   setSyncAdapter: mock(() => {}),
+  getSyncAdapter: mock(() => {}),
+  SYNC_ADAPTER_NAMES: [],
 }));
 
 const addCommand = (await import("../../src/commands/tasks/add")).default;

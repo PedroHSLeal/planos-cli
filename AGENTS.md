@@ -4,7 +4,7 @@ Tiny Bun + commander todo CLI ("planos") with an OpenTUI (Solid) TUI layer. Wind
 
 ## Commands
 
-- `bun test` — full suite (68 tests). Single file: `bun test tests/commands/note.test.ts`
+- `bun test` — full suite (83 tests). Single file: `bun test tests/commands/note.test.ts`
 - `bunx tsc` — typecheck (tsconfig has `noEmit`; no dedicated script)
 - `bun index.ts <cmd>` / `bun --watch index.ts` — run/dev the CLI
 - No lint or codegen exists; don't invent steps
@@ -24,9 +24,11 @@ empty string falls back to default).
   Tests NEVER render it — mock the view module. TUI (Select/VimEditor) is intentionally untested
 - `src/services/storage/` — repository.ts (CRUD), database.ts (open/init), extras.ts (JSON+Date
   serialization), to-markdown.ts, model.ts (types; sections done=0/doing=1/backlog=2)
-- `src/services/sync/` — one-way push of local changes to a remote (`TaskSyncAdapter`). Commands/views call
-  `syncTaskCreated/Updated/Deleted` AFTER the repository write; hooks swallow+log errors. `google-tasks/` holds
-  config (env `PLANOS_GOOGLE_*`), auth, a `fetch`-injectable Tasks API client, mapper (extras → JSON in `notes`)
+- `src/services/sync/` — one-way push of local changes to a remote (`TaskSyncAdapter`, which also has a required
+  `login()`). Commands/views call `syncTaskCreated/Updated/Deleted` AFTER the repository write; hooks swallow+log
+  errors. `registry.ts` maps adapter names → factories (used by `planos login <adapter>`). `google-tasks/` holds
+  config (env `PLANOS_GOOGLE_*` over `<PLANOS_HOME>/google-tasks.json` saved by login), auth, login (OAuth loopback
+  + PKCE via `Bun.serve` on 127.0.0.1), a `fetch`-injectable Tasks API client, mapper (extras → JSON in `notes`)
   and the adapter. Local↔remote ids live in the `SyncLinks` table (`storage/sync-links.ts`)
 - bunfig.toml preloads `@opentui/solid/preload` — also active under `bun test`
 
@@ -45,7 +47,9 @@ empty string falls back to default).
 - Temp-dir helpers live in `tests/helpers/tmp.ts`; `tests/helpers/fake-fetch.ts` records HTTP calls
 - Tests must NEVER hit Google: inject a fake fetch, use `setSyncAdapter(...)` (reset to `undefined` after),
   mock `src/services/sync` in command tests, and E2E strips `PLANOS_GOOGLE_*` from the child env.
-  Sync tests import `sync/hooks` directly, not the `sync` index (which command tests mock)
+  Sync tests import `sync/hooks` directly, not the `sync` index (which command tests mock). Pass the `stored`
+  arg to `readGoogleTasksConfig` in tests so the real `~/.config/planos/google-tasks.json` is never read; login
+  tests inject `openUrl` that plays the browser by hitting the loopback redirect
 
 ## TypeScript quirks
 

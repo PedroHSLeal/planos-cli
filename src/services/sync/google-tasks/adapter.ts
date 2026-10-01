@@ -5,7 +5,8 @@ import { deleteSyncLink, getSyncLink, saveSyncLink } from "../../storage/sync-li
 import type { TaskSyncAdapter } from "../adapter";
 import { createAccessTokenProvider, type FetchLike } from "./auth";
 import { createGoogleTasksClient, GoogleTasksApiError, type GoogleTasksClient } from "./client";
-import type { GoogleTasksConfig } from "./config";
+import { saveStoredGoogleCredentials, type GoogleTasksConfig } from "./config";
+import { loginToGoogleTasks } from "./login";
 import { toGoogleTask } from "./mapper";
 
 export const GOOGLE_TASKS_PROVIDER = "google-tasks";
@@ -13,10 +14,11 @@ export const GOOGLE_TASKS_PROVIDER = "google-tasks";
 export type GoogleTasksAdapterOptions = {
   client: GoogleTasksClient;
   taskListId: string;
+  login: () => Promise<void>;
   database?: Database;
 };
 
-export function createGoogleTasksAdapter({ client, taskListId, database }: GoogleTasksAdapterOptions): TaskSyncAdapter {
+export function createGoogleTasksAdapter({ client, taskListId, login, database }: GoogleTasksAdapterOptions): TaskSyncAdapter {
   async function insert(task: TaskRow): Promise<void> {
     const remote = await client.insertTask(taskListId, toGoogleTask(task));
     if (!remote.id) throw new Error("Google Tasks insert returned no task id");
@@ -25,6 +27,8 @@ export function createGoogleTasksAdapter({ client, taskListId, database }: Googl
 
   return {
     provider: GOOGLE_TASKS_PROVIDER,
+
+    login,
 
     created: insert,
 
@@ -58,5 +62,11 @@ export function createGoogleTasksAdapter({ client, taskListId, database }: Googl
 
 export function createGoogleTasksAdapterFromConfig(config: GoogleTasksConfig, fetchFn?: FetchLike, database?: Database): TaskSyncAdapter {
   const client = createGoogleTasksClient({ getAccessToken: createAccessTokenProvider(config, fetchFn), fetch: fetchFn });
-  return createGoogleTasksAdapter({ client, taskListId: config.taskListId, database });
+  const login = () => loginToGoogleTasks({
+    clientId: config.clientId,
+    clientSecret: config.clientSecret,
+    saveCredentials: credentials => saveStoredGoogleCredentials(credentials),
+    fetch: fetchFn,
+  });
+  return createGoogleTasksAdapter({ client, taskListId: config.taskListId, login, database });
 }

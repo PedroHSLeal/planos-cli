@@ -4,6 +4,7 @@ import completeCommand from "./src/commands/tasks/complete";
 import printCommand from "./src/commands/tasks/print";
 import noteCommand from "./src/commands/tasks/note";
 import startCommand from "./src/commands/tasks/start";
+import loginCommand from "./src/commands/tasks/login";
 
 const program = new Command();
 
@@ -18,5 +19,6 @@ completeCommand(program);
 printCommand(program);
 noteCommand(program);
 startCommand(program);
+loginCommand(program);
 
 program.parseAsync(process.argv);
