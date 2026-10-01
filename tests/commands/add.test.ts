@@ -12,6 +12,14 @@ mock.module("../../src/services/storage", () => ({
   deleteTaskById: mock(() => {}),
 }));
 
+const syncTaskCreated = mock(async (_id: number) => {});
+mock.module("../../src/services/sync", () => ({
+  syncTaskCreated,
+  syncTaskUpdated: mock(async () => {}),
+  syncTaskDeleted: mock(async () => {}),
+  setSyncAdapter: mock(() => {}),
+}));
+
 const addCommand = (await import("../../src/commands/tasks/add")).default;
 
 describe("planos add", () => {
@@ -34,5 +42,16 @@ describe("planos add", () => {
     await program.parseAsync(["add", "my task", "-s", "doing"], { from: "user" });
 
     expect(insertTask).toHaveBeenCalledWith("doing", "my task");
+  });
+
+  test("syncs the newly inserted task", async () => {
+    syncTaskCreated.mockClear();
+
+    const program = new Command();
+    addCommand(program);
+    await program.parseAsync(["add", "my task"], { from: "user" });
+
+    expect(syncTaskCreated).toHaveBeenCalledTimes(1);
+    expect(syncTaskCreated).toHaveBeenCalledWith(1);
   });
 });

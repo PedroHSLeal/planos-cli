@@ -71,7 +71,36 @@ Example output of `planos print`:
 
 ## Data
 
-All tasks are stored locally in `~/.config/planos/tasks.sqlite`. Nothing leaves your machine.
+All tasks are stored locally in `~/.config/planos/tasks.sqlite`. Nothing leaves your machine unless you enable Google Tasks sync.
+
+## Google Tasks sync (optional)
+
+When configured, every change made through planos is mirrored to [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) via the Tasks API. The local database stays the source of truth: sync is one-way (planos → Google), and a failed sync prints a warning without failing the command.
+
+| planos operation | Tasks API call |
+| --- | --- |
+| `add` | `tasks.insert` |
+| `start`, `complete`, `note` | `tasks.patch` (or `tasks.insert` if the task was never synced, or was deleted in Google) |
+| task deletion | `tasks.delete` |
+
+Each Google task gets the planos title, a `completed` status when the task is done (or has `completedAt`), and the task's whole `extras` object (notes, `startedAt`, `completedAt`, …) stored as JSON in the Google task's **notes**.
+
+Configure it with environment variables:
+
+```sh
+# OAuth client + refresh token (scope: https://www.googleapis.com/auth/tasks)
+export PLANOS_GOOGLE_CLIENT_ID=...
+export PLANOS_GOOGLE_CLIENT_SECRET=...
+export PLANOS_GOOGLE_REFRESH_TOKEN=...
+
+# or a short-lived access token instead (handy for quick tests)
+export PLANOS_GOOGLE_ACCESS_TOKEN=...
+
+# optional: target task list id (defaults to your default list)
+export PLANOS_GOOGLE_TASKLIST=@default
+```
+
+One way to get a refresh token: create an OAuth client in the Google Cloud console with the Tasks API enabled, then authorize the `https://www.googleapis.com/auth/tasks` scope in the [OAuth 2.0 Playground](https://developers.google.com/oauthplayground) using your own client credentials.
 
 ## Development
 

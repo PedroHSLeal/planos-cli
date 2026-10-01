@@ -4,6 +4,7 @@ import { Dynamic, render, useRenderer } from "@opentui/solid";
 import { createSignal, type JSXElement } from "solid-js";
 import { getTaskById, updateTask } from "../../../services/storage";
 import type { TaskRow } from "../../../services/storage/model";
+import { syncTaskUpdated } from "../../../services/sync";
 import { renderEditor, renderSelect } from "../../../tui";
 
 const rendererOptions: CliRendererConfig = {
@@ -47,6 +48,7 @@ function View(initialProps: ViewProps) {
       onConfirmFn: async (plainText) => {
         updateTask(id()!, { extras: { ...extras(), notes: plainText } })
         renderer.destroy();
+        await syncTaskUpdated(id()!);
       }
     })
   }
