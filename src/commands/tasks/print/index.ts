@@ -10,7 +10,7 @@ export type PrintOptions = {
 
 export default function (program: Command): void {
   program
-    .command("print", { isDefault: true })
+    .command("print")
     .option("--markdown", "print tasks as markdown", true)
     .option("--json", "print tasks as JSON", false)
     .description("print tasks")

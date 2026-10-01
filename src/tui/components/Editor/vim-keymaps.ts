@@ -1,7 +1,7 @@
 import { useKeyboard, useRenderer } from "@opentui/solid"
 import type { TextareaRenderable } from "@opentui/core"
 import { createSignal } from "solid-js"
-import type { EditorProps } from ".";
+import type { EditorProps } from "./v1";
 
 export type Mode = "normal" | "insert" | "visual";
 

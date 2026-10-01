@@ -13,15 +13,19 @@ export function Select({ items, onConfirmFn }: SelectProps) {
 
   onMount(() => {
     refSelect.focus();
-    refSelect!.on(SelectRenderableEvents.ITEM_SELECTED, (index: number, option: SelectOption) => {
+    refSelect!.on(SelectRenderableEvents.ITEM_SELECTED, async (index: number, option: SelectOption) => {
       onConfirmFn(option.value);
     });
   });
 
   return (
-    <box style={{ flexDirection: "column", gap: 1 }}>
-      <text>[up / down] navigation - [enter] confirm</text>
+    <box style={{ flexDirection: "column" }}>
+      <text>[up / down] <span style={{ fg: "#777" }}>[j / k]</span> navigation - [enter] confirm</text>
       <select
+        showDescription={false}
+        showScrollIndicator={true}
+        height="auto"
+        width="auto"
         ref={(el) => { refSelect = el; }}
         options={optionItems()}
         style={{ flexGrow: 1, padding: 1 }}

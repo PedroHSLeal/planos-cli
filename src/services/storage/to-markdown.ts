@@ -1,8 +1,8 @@
 import { TASK_SECTION, type TaskRow, type TaskSection } from "./model";
 
 const sections: Array<[TaskSection, string]> = [
-  [TASK_SECTION.doing, "# DOING"],
   [TASK_SECTION.done, "# DONE"],
+  [TASK_SECTION.doing, "# DOING"],
   [TASK_SECTION.backlog, "# BACKLOG"],
 ];
 

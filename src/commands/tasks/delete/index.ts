@@ -4,10 +4,9 @@ import { renderView } from "./view";
 
 export default function (program: Command): void {
   program
-    .command("start [task]")
-    .option("-s, --section <section>", "section where the task is located", "backlog")
-    .description("start a task registered")
-    .action(async (task: string) => {
+    .command("delete [task]")
+    .description("delete task")
+    .action(async (task: string | undefined) => {
       let dbTasks: any[] = [];
 
       if (task) {
@@ -16,7 +15,9 @@ export default function (program: Command): void {
 
         dbTasks.push(taskByTitle);
       }
-      else dbTasks = dbTasks.concat(listTasks());
+      else {
+        dbTasks = dbTasks.concat(listTasks());
+      }
 
       await renderView({ tasks: dbTasks });
     });

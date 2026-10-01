@@ -73,6 +73,7 @@ export function insertTask(section: KnownSection, task: string, extras: Extras =
 
 export function updateTask(id: number, changes: TaskUpdate, database = getDatabase()): void {
   const entries: [string, string | number][] = [];
+
   if (changes.task !== undefined) entries.push(["task", changes.task]);
   if (changes.section !== undefined) entries.push(["section", changes.section]);
   if (changes.extras !== undefined) entries.push(["extras", serializeExtras(changes.extras)]);
@@ -81,10 +82,12 @@ export function updateTask(id: number, changes: TaskUpdate, database = getDataba
   const result = database
     .query(`UPDATE Tasks SET ${entries.map(([column]) => `${column} = ?`).join(", ")} WHERE id = ?`)
     .run(...entries.map(([, value]) => value), id);
+
   if (result.changes === 0) throw new Error(`Error: task not found: '${id}'`);
 }
 
 export function deleteTaskById(id: number, database = getDatabase()): void {
   const result = database.query("DELETE FROM Tasks WHERE id = ?").run(id);
+
   if (result.changes === 0) throw new Error(`Error: task not found: '${id}'`);
 }
