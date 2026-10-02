@@ -1,6 +1,9 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Command } from "commander";
 
+import * as model from "../../src/services/storage/model";
+import * as toMarkdown from "../../src/services/storage/to-markdown";
+
 import { TASK_SECTION, type TaskRow } from "../../src/services/storage/model";
 
 const sampleTask: TaskRow = { id: 1, task: "sample", section: TASK_SECTION.backlog, extras: {} };
@@ -9,6 +12,8 @@ let oldestTask: TaskRow | undefined;
 let allTasks: TaskRow[] = [];
 
 mock.module("../../src/services/storage", () => ({
+  ...model,
+  ...toMarkdown,
   insertTask: mock(() => 1),
   listTasks: mock(() => allTasks),
   getTaskById: mock(() => undefined),

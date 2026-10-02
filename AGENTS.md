@@ -4,7 +4,7 @@ Tiny Bun + commander todo CLI ("planos") with an OpenTUI (Solid) TUI layer. Wind
 
 ## Commands
 
-- `bun test` — full suite (83 tests). Single file: `bun test tests/commands/note.test.ts`
+- `bun test` — full suite (107 tests). Single file: `bun test tests/commands/note.test.ts`
 - `bunx tsc` — typecheck (tsconfig has `noEmit`; no dedicated script)
 - `bun index.ts <cmd>` / `bun --watch index.ts` — run/dev the CLI
 - No lint or codegen exists; don't invent steps
@@ -29,14 +29,14 @@ empty string falls back to default).
   column in `SyncLinks` (last-synced remote-side content; local wins on conflict; per-task errors collected in the
   report). `hooks.ts` (`syncTaskCreated/Updated/Deleted`) remains but commands no longer call it. `registry.ts` maps adapter names → factories (used by `planos login <adapter>`). `google-tasks/` holds
   config (env `PLANOS_GOOGLE_*` over `<PLANOS_HOME>/google-tasks.json` saved by login), auth, login (OAuth loopback
-  + PKCE via `Bun.serve` on 127.0.0.1), a `fetch`-injectable Tasks API client, mapper (extras → JSON in `notes`)
+  + PKCE via `Bun.serve` on 127.0.0.1), a Tasks API client using global `fetch`, mapper (extras → JSON in `notes`)
   and the adapter. Local↔remote ids live in the `SyncLinks` table (`storage/sync-links.ts`)
 - bunfig.toml preloads `@opentui/solid/preload` — also active under `bun test`
 
 ## Testing conventions (established in tests/)
 
 - Command tests use `mock.module("../../src/services/storage", ...)` with mocks defined at
-  module top level and passed into the factory; the command module must be dynamically imported
+  module top level, spreading the real `model` and `to-markdown` modules (the index re-exports them) and passed into the factory; the command module must be dynamically imported
   AFTER `mock.module`. `mock.module` resolves specifiers relative to the calling file — this
   boilerplate CANNOT be extracted into `tests/helpers/` (paths would break); duplication across
   test files is accepted
@@ -46,7 +46,8 @@ empty string falls back to default).
 - E2E spawns the CLI with `process.execPath` (bun executable — PATH-lookup-free) and a temp
   `PLANOS_HOME`; TUI commands (no-arg complete/note/start) are excluded — they need a real terminal
 - Temp-dir helpers live in `tests/helpers/tmp.ts`; `tests/helpers/fake-fetch.ts` records HTTP calls
-- Tests must NEVER hit Google: inject a fake fetch, use `setSyncAdapter(...)` (reset to `undefined` after),
+  (`installFakeFetch` swaps `globalThis.fetch`; restore it in `afterEach`)
+- Tests must NEVER hit Google: install a fake fetch, clear `PLANOS_GOOGLE_*` from `process.env` around config tests, use `setSyncAdapter(...)` (reset to `undefined` after),
   mock `src/services/sync` in command tests, and E2E strips `PLANOS_GOOGLE_*` from the child env.
   Sync tests import `sync/hooks` directly, not the `sync` index (which command tests mock). Pass the `stored`
   arg to `readGoogleTasksConfig` in tests. Engine tests use `createGoogleTasksAdapter` with an in-memory fake

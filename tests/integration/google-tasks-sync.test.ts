@@ -4,27 +4,30 @@ import { Database } from "bun:sqlite";
 import { openDatabase } from "../../src/services/storage/database";
 import * as repository from "../../src/services/storage/repository";
 import { getSyncLink } from "../../src/services/storage/sync-links";
-import { createGoogleTasksAdapterFromConfig, GOOGLE_TASKS_PROVIDER } from "../../src/services/sync/google-tasks/adapter";
+import { createGoogleTasksAdapterFromConfig, GOOGLE_TASKS_PROVIDER } from "../../src/services/sync/adapters/google-tasks/adapter";
 import { setSyncAdapter, syncTaskCreated, syncTaskDeleted, syncTaskUpdated } from "../../src/services/sync/hooks";
-import { createFakeFetch, jsonResponse, type RecordedRequest } from "../helpers/fake-fetch";
+import { installFakeFetch, jsonResponse, type RecordedRequest } from "../helpers/fake-fetch";
 import { cleanupTempDir, makeTempDir, tempDbPath } from "../helpers/tmp";
 
 let db: Database;
 let tempDir: string;
 let respond: (request: RecordedRequest) => Response;
 let requests: RecordedRequest[];
+let restoreFetch: () => void;
 
 beforeEach(() => {
   tempDir = makeTempDir();
   db = openDatabase(tempDbPath(tempDir));
   respond = ({ method }) => (method === "DELETE" ? new Response(null, { status: 204 }) : jsonResponse({ id: "g1" }));
 
-  const fake = createFakeFetch(request => respond(request));
+  const fake = installFakeFetch(request => respond(request));
   requests = fake.requests;
-  setSyncAdapter(createGoogleTasksAdapterFromConfig({ taskListId: "list", accessToken: "tok" }, fake.fetch, db));
+  restoreFetch = fake.restore;
+  setSyncAdapter(createGoogleTasksAdapterFromConfig({ taskListId: "list", accessToken: "tok" }, db));
 });
 
 afterEach(() => {
+  restoreFetch();
   setSyncAdapter(undefined);
   db.close();
   cleanupTempDir(tempDir);
@@ -49,6 +52,7 @@ describe("Google Tasks sync", () => {
       provider: GOOGLE_TASKS_PROVIDER,
       remoteListId: "list",
       remoteId: "g1",
+      fingerprint: null,
     });
   });
 

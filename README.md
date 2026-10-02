@@ -62,13 +62,13 @@ planos print --json
 Example output of `planos print`:
 
 ```markdown
-# DOING
-
-- [ ] fix the build
-
 # DONE
 
 - [x] write the README
+
+# DOING
+
+- [ ] fix the build
 
 # BACKLOG
 

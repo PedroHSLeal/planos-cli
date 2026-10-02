@@ -6,24 +6,46 @@ import {
   readGoogleTasksConfig,
   readStoredGoogleCredentials,
   saveStoredGoogleCredentials,
-} from "../../src/services/sync/google-tasks/config";
+} from "../../src/services/sync/adapters/google-tasks/config";
 import { cleanupTempDir, makeTempDir } from "../helpers/tmp";
+
+// Bun auto-loads .env (which may hold real PLANOS_GOOGLE_* values), so every test
+// starts from a clean slate and sets only what it needs.
+const savedGoogleEnv: Record<string, string | undefined> = {};
+
+function setGoogleEnv(values: Record<string, string>): void {
+  Object.assign(process.env, values);
+}
+
+beforeEach(() => {
+  for (const key of Object.keys(process.env).filter(key => key.startsWith("PLANOS_GOOGLE_"))) {
+    savedGoogleEnv[key] = process.env[key];
+    delete process.env[key];
+  }
+});
+
+afterEach(() => {
+  for (const key of Object.keys(process.env).filter(key => key.startsWith("PLANOS_GOOGLE_"))) delete process.env[key];
+  Object.assign(process.env, savedGoogleEnv);
+});
 
 describe("readGoogleTasksConfig", () => {
   test("is disabled when no credentials are set", () => {
-    expect(readGoogleTasksConfig({}, {})).toBeUndefined();
+    expect(readGoogleTasksConfig({})).toBeUndefined();
   });
 
   test("is disabled with an incomplete refresh-token set", () => {
-    expect(readGoogleTasksConfig({ PLANOS_GOOGLE_CLIENT_ID: "id", PLANOS_GOOGLE_REFRESH_TOKEN: "r" }, {})).toBeUndefined();
+    setGoogleEnv({ PLANOS_GOOGLE_CLIENT_ID: "id", PLANOS_GOOGLE_REFRESH_TOKEN: "r" });
+    expect(readGoogleTasksConfig({})).toBeUndefined();
   });
 
   test("enables with a refresh-token set and defaults the task list", () => {
-    expect(readGoogleTasksConfig({
+    setGoogleEnv({
       PLANOS_GOOGLE_CLIENT_ID: "id",
       PLANOS_GOOGLE_CLIENT_SECRET: "secret",
       PLANOS_GOOGLE_REFRESH_TOKEN: "refresh",
-    }, {})).toEqual({
+    });
+    expect(readGoogleTasksConfig({})).toEqual({
       taskListId: "@default",
       accessToken: undefined,
       clientId: "id",
@@ -33,21 +55,20 @@ describe("readGoogleTasksConfig", () => {
   });
 
   test("enables with an access token and a custom task list", () => {
-    const config = readGoogleTasksConfig({ PLANOS_GOOGLE_ACCESS_TOKEN: "tok", PLANOS_GOOGLE_TASKLIST: "list-1" }, {});
+    setGoogleEnv({ PLANOS_GOOGLE_ACCESS_TOKEN: "tok", PLANOS_GOOGLE_TASKLIST: "list-1" });
+    const config = readGoogleTasksConfig({});
     expect(config?.accessToken).toBe("tok");
     expect(config?.taskListId).toBe("list-1");
   });
 
   test("enables from stored login credentials", () => {
-    const config = readGoogleTasksConfig({}, { clientId: "id", clientSecret: "secret", refreshToken: "stored" });
+    const config = readGoogleTasksConfig({ clientId: "id", clientSecret: "secret", refreshToken: "stored" });
     expect(config?.refreshToken).toBe("stored");
   });
 
   test("env vars override stored credentials", () => {
-    const config = readGoogleTasksConfig(
-      { PLANOS_GOOGLE_REFRESH_TOKEN: "env" },
-      { clientId: "id", clientSecret: "secret", refreshToken: "stored" },
-    );
+    setGoogleEnv({ PLANOS_GOOGLE_REFRESH_TOKEN: "env" });
+    const config = readGoogleTasksConfig({ clientId: "id", clientSecret: "secret", refreshToken: "stored" });
     expect(config?.refreshToken).toBe("env");
     expect(config?.clientId).toBe("id");
   });

@@ -1,14 +1,27 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 
-import { createAccessTokenProvider, GOOGLE_TOKEN_URL } from "../../src/services/sync/google-tasks/auth";
-import { createGoogleTasksClient, GoogleTasksApiError } from "../../src/services/sync/google-tasks/client";
-import { createFakeFetch, jsonResponse } from "../helpers/fake-fetch";
+import { createAccessTokenProvider, GOOGLE_TOKEN_URL } from "../../src/services/sync/adapters/google-tasks/auth";
+import { createGoogleTasksClient, GoogleTasksApiError } from "../../src/services/sync/adapters/google-tasks/client";
+import { installFakeFetch, jsonResponse } from "../helpers/fake-fetch";
+
+let restoreFetch: (() => void) | undefined;
+
+afterEach(() => {
+  restoreFetch?.();
+  restoreFetch = undefined;
+});
+
+function fakeFetch(respond: Parameters<typeof installFakeFetch>[0]) {
+  const fake = installFakeFetch(respond);
+  restoreFetch = fake.restore;
+  return fake;
+}
 
 const BASE = "https://tasks.googleapis.com/tasks/v1";
 
-function makeClient(respond: Parameters<typeof createFakeFetch>[0]) {
-  const fake = createFakeFetch(respond);
-  const client = createGoogleTasksClient({ getAccessToken: async () => "tok", fetch: fake.fetch });
+function makeClient(respond: Parameters<typeof installFakeFetch>[0]) {
+  const fake = fakeFetch(respond);
+  const client = createGoogleTasksClient({ getAccessToken: async () => "tok" });
   return { client, requests: fake.requests };
 }
 
@@ -68,26 +81,25 @@ describe("Google Tasks client", () => {
   test("non-2xx responses throw GoogleTasksApiError with the status", async () => {
     const { client } = makeClient(() => new Response("gone", { status: 404 }));
 
-    const error = await client.getTask("list", "g1").catch(e => e);
+    const error = await client.getTask("list", "g1").catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GoogleTasksApiError);
-    expect(error.status).toBe(404);
+    expect((error as GoogleTasksApiError).status).toBe(404);
   });
 });
 
 describe("createAccessTokenProvider", () => {
   test("returns a static access token without fetching", async () => {
-    const fake = createFakeFetch(() => jsonResponse({}));
-    const provider = createAccessTokenProvider({ taskListId: "@default", accessToken: "static" }, fake.fetch);
+    const fake = fakeFetch(() => jsonResponse({}));
+    const provider = createAccessTokenProvider({ taskListId: "@default", accessToken: "static" });
 
     expect(await provider()).toBe("static");
     expect(fake.requests).toHaveLength(0);
   });
 
   test("exchanges the refresh token once and memoizes it", async () => {
-    const fake = createFakeFetch(() => jsonResponse({ access_token: "fresh" }));
+    const fake = fakeFetch(() => jsonResponse({ access_token: "fresh" }));
     const provider = createAccessTokenProvider(
-      { taskListId: "@default", clientId: "id", clientSecret: "secret", refreshToken: "refresh" },
-      fake.fetch,
+      { taskListId: "@default", clientId: "id", clientSecret: "secret", refreshToken: "refresh" }
     );
 
     expect(await provider()).toBe("fresh");
@@ -103,10 +115,9 @@ describe("createAccessTokenProvider", () => {
   });
 
   test("throws when the token endpoint rejects", async () => {
-    const fake = createFakeFetch(() => new Response("bad", { status: 400 }));
+    const fake = fakeFetch(() => new Response("bad", { status: 400 }));
     const provider = createAccessTokenProvider(
-      { taskListId: "@default", clientId: "id", clientSecret: "secret", refreshToken: "refresh" },
-      fake.fetch,
+      { taskListId: "@default", clientId: "id", clientSecret: "secret", refreshToken: "refresh" }
     );
 
     await expect(provider()).rejects.toThrow("token refresh failed");

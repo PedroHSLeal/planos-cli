@@ -20,6 +20,6 @@ export default function (program: Command): void {
         dbTasks = dbTasks.concat(listTasks());
       }
 
-      await renderView({ tasks: dbTasks.filter(t => t.section != TASK_SECTION.doing) });
+      await renderView({ tasks: dbTasks.filter(t => t.section !== TASK_SECTION.done) });
     });
 }

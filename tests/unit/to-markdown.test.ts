@@ -8,13 +8,13 @@ function task(id: number, name: string, section: TaskRow["section"]): TaskRow {
 }
 
 describe("tasksToMarkdown", () => {
-  test("renders headers in order DOING, DONE, BACKLOG", () => {
+  test("renders headers in order DONE, DOING, BACKLOG", () => {
     const markdown = tasksToMarkdown([]);
     expect(markdown).toContain("# DOING");
     expect(markdown).toContain("# DONE");
     expect(markdown).toContain("# BACKLOG");
-    expect(markdown.indexOf("# DOING")).toBeLessThan(markdown.indexOf("# DONE"));
-    expect(markdown.indexOf("# DONE")).toBeLessThan(markdown.indexOf("# BACKLOG"));
+    expect(markdown.indexOf("# DONE")).toBeLessThan(markdown.indexOf("# DOING"));
+    expect(markdown.indexOf("# DOING")).toBeLessThan(markdown.indexOf("# BACKLOG"));
   });
 
   test("renders done tasks with checked boxes, others unchecked", () => {
@@ -33,7 +33,7 @@ describe("tasksToMarkdown", () => {
       task(1, "b1", TASK_SECTION.backlog),
       task(2, "d1", TASK_SECTION.doing),
     ]);
-    const doingPart = markdown.split("# DOING")[1]!.split("# DONE")[0]!;
+    const doingPart = markdown.split("# DOING")[1]!.split("# BACKLOG")[0]!;
     const backlogPart = markdown.split("# BACKLOG")[1]!;
     expect(doingPart).toContain("- [ ] d1");
     expect(doingPart).not.toContain("b1");

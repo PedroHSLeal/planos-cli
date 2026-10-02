@@ -1,25 +1,20 @@
 import { describe, expect, mock, test } from "bun:test";
 import { Command } from "commander";
 
+import * as model from "../../src/services/storage/model";
+import * as toMarkdown from "../../src/services/storage/to-markdown";
+
 const insertTask = mock((_section: string, _task: string) => 1);
 
 mock.module("../../src/services/storage", () => ({
+  ...model,
+  ...toMarkdown,
   insertTask,
   listTasks: mock(() => []),
   getTaskById: mock(() => undefined),
   getOldestTaskByTitle: mock((_title: string) => undefined),
   updateTask: mock(() => {}),
   deleteTaskById: mock(() => {}),
-}));
-
-const syncTaskCreated = mock(async (_id: number) => {});
-mock.module("../../src/services/sync", () => ({
-  syncTaskCreated,
-  syncTaskUpdated: mock(async () => {}),
-  syncTaskDeleted: mock(async () => {}),
-  setSyncAdapter: mock(() => {}),
-  getSyncAdapter: mock(() => {}),
-  SYNC_ADAPTER_NAMES: [],
 }));
 
 const addCommand = (await import("../../src/commands/tasks/add")).default;
@@ -44,16 +39,5 @@ describe("planos add", () => {
     await program.parseAsync(["add", "my task", "-s", "doing"], { from: "user" });
 
     expect(insertTask).toHaveBeenCalledWith("doing", "my task");
-  });
-
-  test("syncs the newly inserted task", async () => {
-    syncTaskCreated.mockClear();
-
-    const program = new Command();
-    addCommand(program);
-    await program.parseAsync(["add", "my task"], { from: "user" });
-
-    expect(syncTaskCreated).toHaveBeenCalledTimes(1);
-    expect(syncTaskCreated).toHaveBeenCalledWith(1);
   });
 });

@@ -1,9 +1,15 @@
-import { describe, expect, mock, test } from "bun:test";
+import { afterEach, describe, expect, mock, test } from "bun:test";
 
-import { GOOGLE_TOKEN_URL } from "../../src/services/sync/google-tasks/auth";
-import type { StoredGoogleCredentials } from "../../src/services/sync/google-tasks/config";
-import { GOOGLE_AUTH_URL, GOOGLE_TASKS_SCOPE, loginToGoogleTasks } from "../../src/services/sync/google-tasks/login";
-import { createFakeFetch, jsonResponse } from "../helpers/fake-fetch";
+import { GOOGLE_TOKEN_URL } from "../../src/services/sync/adapters/google-tasks/auth";
+import type { StoredGoogleCredentials } from "../../src/services/sync/adapters/google-tasks/config";
+import { GOOGLE_AUTH_URL, GOOGLE_TASKS_SCOPE, loginToGoogleTasks } from "../../src/services/sync/adapters/google-tasks/login";
+import { installFakeFetch, jsonResponse } from "../helpers/fake-fetch";
+
+const realFetch = globalThis.fetch;
+
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
 
 // Plays the browser: follows Google's redirect back to the local loopback server.
 function browserRedirect(query: (authParams: URLSearchParams) => Record<string, string>) {
@@ -11,13 +17,13 @@ function browserRedirect(query: (authParams: URLSearchParams) => Record<string, 
     const authParams = new URL(authUrl).searchParams;
     const redirect = new URL(authParams.get("redirect_uri")!);
     for (const [key, value] of Object.entries(query(authParams))) redirect.searchParams.set(key, value);
-    void fetch(redirect.toString()).catch(() => {});
+    void realFetch(redirect.toString()).catch(() => {});
   };
 }
 
 function baseOptions() {
   const saveCredentials = mock((_credentials: StoredGoogleCredentials) => {});
-  const fake = createFakeFetch(() => jsonResponse({ access_token: "a", refresh_token: "refresh-1" }));
+  const fake = installFakeFetch(() => jsonResponse({ access_token: "a", refresh_token: "refresh-1" }));
   return { saveCredentials, fake, log: () => {} };
 }
 
@@ -38,7 +44,6 @@ describe("loginToGoogleTasks", () => {
       clientSecret: "secret",
       saveCredentials,
       log,
-      fetch: fake.fetch,
       openUrl: browserRedirect(params => {
         authParams = params;
         return { code: "auth-code", state: params.get("state")! };
@@ -74,7 +79,6 @@ describe("loginToGoogleTasks", () => {
       clientSecret: "secret",
       saveCredentials,
       log,
-      fetch: fake.fetch,
       openUrl: browserRedirect(() => ({ code: "auth-code", state: "forged" })),
     })).rejects.toThrow("state mismatch");
     expect(fake.requests).toHaveLength(0);
@@ -88,7 +92,6 @@ describe("loginToGoogleTasks", () => {
       clientSecret: "secret",
       saveCredentials,
       log,
-      fetch: fake.fetch,
       openUrl: browserRedirect(params => ({ error: "access_denied", state: params.get("state")! })),
     })).rejects.toThrow("access_denied");
     expect(saveCredentials).not.toHaveBeenCalled();
@@ -102,7 +105,6 @@ describe("loginToGoogleTasks", () => {
       clientSecret: "secret",
       saveCredentials,
       log,
-      fetch: fake.fetch,
       openUrl: () => {},
       timeoutMs: 20,
     })).rejects.toThrow("timed out");
@@ -117,7 +119,6 @@ describe("loginToGoogleTasks", () => {
       clientSecret: "secret",
       saveCredentials,
       log,
-      fetch: fake.fetch,
       openUrl: browserRedirect(params => ({ code: "c", state: params.get("state")! })),
     });
 

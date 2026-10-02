@@ -28,3 +28,12 @@ export function createFakeFetch(respond: Responder) {
 export function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 }
+
+// Replaces the global fetch with a fake for the duration of a test; call `restore` in afterEach.
+// The real fetch is returned for code that must still hit the network (e.g. the login loopback).
+export function installFakeFetch(respond: Responder) {
+  const realFetch = globalThis.fetch;
+  const fake = createFakeFetch(respond);
+  globalThis.fetch = fake.fetch as unknown as typeof fetch;
+  return { requests: fake.requests, realFetch, restore: () => { globalThis.fetch = realFetch; } };
+}
