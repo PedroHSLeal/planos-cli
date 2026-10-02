@@ -28,3 +28,6 @@ out
 # Agents skills
 .agents
 .claude
+# Compiled executable (bun run build)
+/planos
+/planos.exe

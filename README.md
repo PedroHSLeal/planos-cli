@@ -130,7 +130,10 @@ export PLANOS_GOOGLE_TASKLIST=@default
 bun test    # run the test suite
 bunx tsc    # typecheck
 bun index.ts <cmd>   # run the CLI
+bun run build        # compile a standalone ./planos executable for this platform
 ```
+
+Every push to `master` runs `.github/workflows/build.yml`: typecheck and tests, then `bun run build` on Linux (x64, arm64), macOS (arm64) and Windows (x64), and publishes the executables as a GitHub release tagged `v<version>-build.<run number>`. To bake a Google OAuth client into the binaries (so users can run `planos login google-tasks` without env vars), set the `PLANOS_GOOGLE_CLIENT_ID` and `PLANOS_GOOGLE_CLIENT_SECRET` repository secrets.
 
 ## License
 

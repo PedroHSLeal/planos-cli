@@ -61,16 +61,20 @@ describe("planos sync", () => {
     expect(process.exitCode).toBeUndefined();
   });
 
-  test("defaults to the first adapter", async () => {
-    await run();
+  test("requires the adapter argument", async () => {
+    const program = new Command();
+    program.exitOverride();
+    syncCommand(program);
+    program.commands[0]?.exitOverride().configureOutput({ writeErr: () => {} });
 
-    expect(getSyncAdapter).toHaveBeenCalledWith("google-tasks");
+    await expect(program.parseAsync(["sync"], { from: "user" })).rejects.toThrow("missing required argument");
+    expect(syncAll).not.toHaveBeenCalled();
   });
 
   test("reports per-task failures and sets a failing exit code", async () => {
     report = { ...report, errors: ["'task': boom"] };
 
-    const { error } = await run();
+    const { error } = await run("google-tasks");
 
     expect(error).toHaveBeenCalledWith("planos: google-tasks sync failed for 'task': boom");
     expect(process.exitCode).toBe(1);
