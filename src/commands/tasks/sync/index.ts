@@ -4,9 +4,9 @@ import { getSyncAdapter, syncAll, SYNC_ADAPTER_NAMES, type SyncReport } from "..
 
 export default function (program: Command): void {
   program
-    .command("sync [adapter]")
+    .command("sync <adapter>")
     .description(`two-way sync of local tasks with a sync adapter (${SYNC_ADAPTER_NAMES.join(", ")})`)
-    .action(async (adapter: string = SYNC_ADAPTER_NAMES[0]!) => {
+    .action(async (adapter: string) => {
       const report = await syncAll(getSyncAdapter(adapter));
 
       console.log(`Synced with ${adapter}: ${formatCounts("pushed", report.pushed)}; ${formatCounts("pulled", report.pulled)}.`);
