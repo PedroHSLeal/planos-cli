@@ -1,5 +1,5 @@
-import { serializeExtras } from "../../storage/extras";
-import { TASK_SECTION, type TaskRow } from "../../storage/model";
+import { serializeExtras } from "../../../storage/extras";
+import { TASK_SECTION, type TaskRow } from "../../../storage/model";
 import type { GoogleTask } from "./client";
 
 // Google Tasks only knows "needsAction" and "completed"; a task is completed when

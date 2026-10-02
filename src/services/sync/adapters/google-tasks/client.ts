@@ -1,5 +1,3 @@
-import type { FetchLike } from "./auth";
-
 export const GOOGLE_TASKS_BASE_URL = "https://tasks.googleapis.com/tasks/v1";
 
 export type GoogleTaskStatus = "needsAction" | "completed";
@@ -24,19 +22,19 @@ export class GoogleTasksApiError extends Error {
 
 export type GoogleTasksClientOptions = {
   getAccessToken: () => Promise<string>;
-  fetch?: FetchLike;
+  
   baseUrl?: string;
 };
 
 export type GoogleTasksClient = ReturnType<typeof createGoogleTasksClient>;
 
 // Thin wrapper over the Tasks API `tasks` endpoints.
-export function createGoogleTasksClient({ getAccessToken, fetch: fetchFn = fetch, baseUrl = GOOGLE_TASKS_BASE_URL }: GoogleTasksClientOptions) {
+export function createGoogleTasksClient({ getAccessToken, baseUrl = GOOGLE_TASKS_BASE_URL }: GoogleTasksClientOptions) {
   async function request<T>(method: string, path: string, body?: GoogleTask): Promise<T> {
     const headers: Record<string, string> = { Authorization: `Bearer ${await getAccessToken()}` };
     if (body !== undefined) headers["Content-Type"] = "application/json";
 
-    const response = await fetchFn(`${baseUrl}${path}`, {
+    const response = await fetch(`${baseUrl}${path}`, {
       method,
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),

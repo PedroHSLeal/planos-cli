@@ -7,6 +7,8 @@
   "scripts": {
     "start": "bun index.ts",
     "dev": "bun --watch index.ts",
+    "build": "bun --env-file=.env ./scripts/build.ts",
+    "build-local": "bun --env-file=.env.local ./scripts/build.local.ts",
     "test": "bun test"
   },
   "keywords": ["todo", "tasks", "cli", "tui", "bun", "sqlite"],

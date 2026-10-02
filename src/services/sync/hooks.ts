@@ -2,12 +2,12 @@ import type { Database } from "bun:sqlite";
 
 import { getTaskById } from "../storage/repository";
 import type { TaskSyncAdapter } from "./adapter";
-import { createGoogleTasksAdapterFromConfig } from "./google-tasks/adapter";
-import { readGoogleTasksConfig } from "./google-tasks/config";
+import { createGoogleTasksAdapterFromConfig } from "./adapters/google-tasks/adapter";
+import { readGoogleTasksConfig } from "./adapters/google-tasks/config";
 
 let adapter: TaskSyncAdapter | null | undefined;
 
-function getAdapter(): TaskSyncAdapter | null {
+function getAdapter(): typeof adapter {
   if (adapter === undefined) {
     const config = readGoogleTasksConfig();
     adapter = config ? createGoogleTasksAdapterFromConfig(config) : null;
@@ -16,7 +16,7 @@ function getAdapter(): TaskSyncAdapter | null {
 }
 
 // Overrides the env-derived adapter; null disables sync. Intended for tests.
-export function setSyncAdapter(next: TaskSyncAdapter | null | undefined): void {
+export function setSyncAdapter(next: typeof adapter): void {
   adapter = next;
 }
 

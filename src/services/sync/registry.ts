@@ -1,6 +1,5 @@
 import type { TaskSyncAdapter } from "./adapter";
-import { createGoogleTasksAdapterFromConfig, GOOGLE_TASKS_PROVIDER } from "./google-tasks/adapter";
-import { resolveGoogleTasksConfig } from "./google-tasks/config";
+import { createGoogleTasksAdapterFromConfig, resolveGoogleTasksConfig, GOOGLE_TASKS_PROVIDER } from "./adapters/google-tasks";
 
 const factories: Record<string, () => TaskSyncAdapter> = {
   [GOOGLE_TASKS_PROVIDER]: () => createGoogleTasksAdapterFromConfig(resolveGoogleTasksConfig()),

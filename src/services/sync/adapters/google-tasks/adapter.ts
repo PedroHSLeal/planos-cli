@@ -1,9 +1,9 @@
 import type { Database } from "bun:sqlite";
 
-import type { TaskRow } from "../../storage/model";
-import { deleteSyncLink, getSyncLink, saveSyncLink } from "../../storage/sync-links";
-import type { TaskSyncAdapter } from "../adapter";
-import { createAccessTokenProvider, type FetchLike } from "./auth";
+import type { TaskRow } from "../../../storage/model";
+import { deleteSyncLink, getSyncLink, saveSyncLink } from "../../../storage/sync-links";
+import type { TaskSyncAdapter } from "../../adapter";
+import { createAccessTokenProvider } from "./auth";
 import { createGoogleTasksClient, GoogleTasksApiError, type GoogleTasksClient } from "./client";
 import { saveStoredGoogleCredentials, type GoogleTasksConfig } from "./config";
 import { loginToGoogleTasks } from "./login";
@@ -60,13 +60,12 @@ export function createGoogleTasksAdapter({ client, taskListId, login, database }
   };
 }
 
-export function createGoogleTasksAdapterFromConfig(config: GoogleTasksConfig, fetchFn?: FetchLike, database?: Database): TaskSyncAdapter {
-  const client = createGoogleTasksClient({ getAccessToken: createAccessTokenProvider(config, fetchFn), fetch: fetchFn });
+export function createGoogleTasksAdapterFromConfig(config: GoogleTasksConfig, database?: Database): TaskSyncAdapter {
+  const client = createGoogleTasksClient({ getAccessToken: createAccessTokenProvider(config) });
   const login = () => loginToGoogleTasks({
     clientId: config.clientId,
     clientSecret: config.clientSecret,
     saveCredentials: credentials => saveStoredGoogleCredentials(credentials),
-    fetch: fetchFn,
   });
   return createGoogleTasksAdapter({ client, taskListId: config.taskListId, login, database });
 }

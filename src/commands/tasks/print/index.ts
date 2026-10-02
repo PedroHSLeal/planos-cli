@@ -1,7 +1,6 @@
 import type { Command } from "commander";
 
-import { listTasks } from "../../../services/storage";
-import { tasksToMarkdown } from "../../../services/storage/to-markdown";
+import { listTasks, tasksToMarkdown } from "../../../services/storage";
 
 export type PrintOptions = {
   markdown?: boolean;

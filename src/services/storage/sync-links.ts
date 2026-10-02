@@ -1,5 +1,3 @@
-import { type Database } from "bun:sqlite";
-
 import { getDatabase } from "./repository";
 
 export type SyncLink = {

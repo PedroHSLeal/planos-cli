@@ -1,25 +1,23 @@
 import type { GoogleTasksConfig } from "./config";
 
-export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
-
 export const GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 // Returns a memoized access-token provider: a static token when configured,
 // otherwise one exchanged from the refresh token on first use.
-export function createAccessTokenProvider(config: GoogleTasksConfig, fetchFn: FetchLike = fetch): () => Promise<string> {
+export function createAccessTokenProvider(config: GoogleTasksConfig): () => Promise<string> {
   let token: Promise<string> | undefined;
 
   return () => {
     if (config.accessToken) return Promise.resolve(config.accessToken);
-    return token ??= refreshAccessToken(config, fetchFn).catch(error => {
+    return token ??= refreshAccessToken(config).catch(error => {
       token = undefined;
       throw error;
     });
   };
 }
 
-async function refreshAccessToken(config: GoogleTasksConfig, fetchFn: FetchLike): Promise<string> {
-  const response = await fetchFn(GOOGLE_TOKEN_URL, {
+async function refreshAccessToken(config: GoogleTasksConfig): Promise<string> {
+  const response = await fetch(GOOGLE_TOKEN_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({

@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 
-import { GOOGLE_TOKEN_URL, type FetchLike } from "./auth";
+import { GOOGLE_TOKEN_URL } from "./auth";
 import type { StoredGoogleCredentials } from "./config";
 
 export const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -12,7 +12,6 @@ export type GoogleLoginOptions = {
   saveCredentials: (credentials: StoredGoogleCredentials) => void;
   openUrl?: (url: string) => void;
   log?: (message: string) => void;
-  fetch?: FetchLike;
   timeoutMs?: number;
 };
 
@@ -25,7 +24,6 @@ export async function loginToGoogleTasks({
   saveCredentials,
   openUrl = openInBrowser,
   log = message => console.log(message),
-  fetch: fetchFn = fetch,
   timeoutMs = 5 * 60_000,
 }: GoogleLoginOptions): Promise<void> {
   if (!clientId || !clientSecret) {
@@ -83,7 +81,7 @@ export async function loginToGoogleTasks({
     openUrl(authUrl);
 
     const code = await codePromise;
-    const response = await fetchFn(GOOGLE_TOKEN_URL, {
+    const response = await fetch(GOOGLE_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({

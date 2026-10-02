@@ -1,8 +1,7 @@
 import { createCliRenderer, type CliRendererConfig } from "@opentui/core";
 import { Dynamic, render, useRenderer } from "@opentui/solid";
 
-import { deleteTaskById, updateTask } from "../../../services/storage";
-import type { TaskRow } from "../../../services/storage/model";
+import { deleteTaskById, type TaskRow } from "../../../services/storage";
 import { renderSelect } from "../../../tui";
 
 const rendererOptions: CliRendererConfig = {

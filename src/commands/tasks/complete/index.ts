@@ -1,7 +1,6 @@
 import type { Command } from "commander";
-import { getOldestTaskByTitle, listTasks } from "../../../services/storage";
+import { getOldestTaskByTitle, listTasks, TASK_SECTION, type TaskRow } from "../../../services/storage";
 import { renderView } from "./view";
-import { TASK_SECTION, type TaskRow } from "../../../services/storage/model";
 
 export default function (program: Command): void {
   program
