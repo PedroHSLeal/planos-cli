@@ -7,7 +7,7 @@ import { createAccessTokenProvider } from "./auth";
 import { createGoogleTasksClient, GoogleTasksApiError, type GoogleTasksClient } from "./client";
 import { saveStoredGoogleCredentials, type GoogleTasksConfig } from "./config";
 import { loginToGoogleTasks } from "./login";
-import { toGoogleTask } from "./mapper";
+import { fromGoogleTask, googleTaskFingerprint, toGoogleTask } from "./mapper";
 
 export const GOOGLE_TASKS_PROVIDER = "google-tasks";
 
@@ -27,6 +27,8 @@ export function createGoogleTasksAdapter({ client, taskListId, login, database }
 
   return {
     provider: GOOGLE_TASKS_PROVIDER,
+
+    remoteListId: taskListId,
 
     login,
 
@@ -56,6 +58,15 @@ export function createGoogleTasksAdapter({ client, taskListId, login, database }
         if (!(error instanceof GoogleTasksApiError && error.status === 404)) throw error;
       }
       deleteSyncLink(taskId, GOOGLE_TASKS_PROVIDER, database);
+    },
+
+    async list() {
+      const remote = await client.listTasks(taskListId);
+      return remote.filter((task): task is typeof task & { id: string } => !!task.id).map(fromGoogleTask);
+    },
+
+    fingerprint(task) {
+      return googleTaskFingerprint(toGoogleTask(task));
     },
   };
 }

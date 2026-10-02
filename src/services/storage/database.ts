@@ -19,9 +19,16 @@ export function initializeDatabase(database: Database): void {
       provider TEXT NOT NULL,
       remoteListId TEXT NOT NULL,
       remoteId TEXT NOT NULL,
+      fingerprint TEXT,
       PRIMARY KEY (taskId, provider)
     )
   `);
+
+  // Databases created before `planos sync` lack the fingerprint column.
+  const syncLinkColumns = database.query("PRAGMA table_info(SyncLinks)").all() as { name: string }[];
+  if (!syncLinkColumns.some(column => column.name === "fingerprint")) {
+    database.run("ALTER TABLE SyncLinks ADD COLUMN fingerprint TEXT");
+  }
 }
 
 export function openDatabase(path = DATABASE_PATH): Database {

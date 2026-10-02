@@ -51,6 +51,9 @@ planos note "write the README"
 # log in to a sync adapter (see "Google Tasks sync" below)
 planos login google-tasks
 
+# two-way sync with the adapter (defaults to google-tasks)
+planos sync
+
 # print your board (markdown by default)
 planos print
 planos print --json
@@ -78,13 +81,19 @@ All tasks are stored locally in `~/.config/planos/tasks.sqlite`. Nothing leaves 
 
 ## Google Tasks sync (optional)
 
-When configured, every change made through planos is mirrored to [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) via the Tasks API. The local database stays the source of truth: sync is one-way (planos → Google), and a failed sync prints a warning without failing the command.
+`planos sync` reconciles your local tasks with a [Google Tasks](https://developers.google.com/workspace/tasks/reference/rest) list in both directions, using the Tasks API. Every synced task remembers a fingerprint of its content from the last sync, which is how planos tells which side changed:
 
-| planos operation | Tasks API call |
+| situation since the last sync | result |
 | --- | --- |
-| `add` | `tasks.insert` |
-| `start`, `complete`, `note` | `tasks.patch` (or `tasks.insert` if the task was never synced, or was deleted in Google) |
-| task deletion | `tasks.delete` |
+| task only exists locally | created in Google (`tasks.insert`) |
+| task only exists in Google | created locally |
+| changed locally | pushed to Google (`tasks.patch`) |
+| changed in Google | pulled into planos |
+| changed on both sides | **local wins** |
+| deleted on one side, unchanged on the other | deleted on the other side too |
+| deleted on one side, changed on the other | the changed copy is restored |
+
+Google Tasks can't tell `doing` from `backlog`, so pulled open tasks keep their local section (new ones land in `doing` if they have a `startedAt`, otherwise `backlog`). A task completed in Google moves to `done`. Notes typed in the Google Tasks app become the task's plain notes. If a single task fails to sync, the rest still sync, the failure is printed, and the command exits with code 1.
 
 Each Google task gets the planos title, a `completed` status when the task is done (or has `completedAt`), and the task's whole `extras` object (notes, `startedAt`, `completedAt`, …) stored as JSON in the Google task's **notes**.
 

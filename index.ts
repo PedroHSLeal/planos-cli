@@ -7,6 +7,7 @@ import exportCommand from "./src/commands/tasks/export";
 import noteCommand from "./src/commands/tasks/note";
 import startCommand from "./src/commands/tasks/start";
 import loginCommand from "./src/commands/tasks/login";
+import syncCommand from "./src/commands/tasks/sync";
 
 const program = new Command();
 
@@ -24,5 +25,6 @@ exportCommand(program);
 noteCommand(program);
 startCommand(program);
 loginCommand(program);
+syncCommand(program);
 
 program.parseAsync(process.argv);

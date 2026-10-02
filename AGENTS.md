@@ -24,9 +24,10 @@ empty string falls back to default).
   Tests NEVER render it — mock the view module. TUI (Select/VimEditor) is intentionally untested
 - `src/services/storage/` — repository.ts (CRUD), database.ts (open/init), extras.ts (JSON+Date
   serialization), to-markdown.ts, model.ts (types; sections done=0/doing=1/backlog=2)
-- `src/services/sync/` — one-way push of local changes to a remote (`TaskSyncAdapter`, which also has a required
-  `login()`). Commands/views call `syncTaskCreated/Updated/Deleted` AFTER the repository write; hooks swallow+log
-  errors. `registry.ts` maps adapter names → factories (used by `planos login <adapter>`). `google-tasks/` holds
+- `src/services/sync/` — `TaskSyncAdapter` (push ops, `list()` of remote tasks, `fingerprint()`, `login()`).
+  `engine.ts` `syncAll(adapter, db)` backs `planos sync`: two-way reconcile driven by the per-link `fingerprint`
+  column in `SyncLinks` (last-synced remote-side content; local wins on conflict; per-task errors collected in the
+  report). `hooks.ts` (`syncTaskCreated/Updated/Deleted`) remains but commands no longer call it. `registry.ts` maps adapter names → factories (used by `planos login <adapter>`). `google-tasks/` holds
   config (env `PLANOS_GOOGLE_*` over `<PLANOS_HOME>/google-tasks.json` saved by login), auth, login (OAuth loopback
   + PKCE via `Bun.serve` on 127.0.0.1), a `fetch`-injectable Tasks API client, mapper (extras → JSON in `notes`)
   and the adapter. Local↔remote ids live in the `SyncLinks` table (`storage/sync-links.ts`)
@@ -48,7 +49,9 @@ empty string falls back to default).
 - Tests must NEVER hit Google: inject a fake fetch, use `setSyncAdapter(...)` (reset to `undefined` after),
   mock `src/services/sync` in command tests, and E2E strips `PLANOS_GOOGLE_*` from the child env.
   Sync tests import `sync/hooks` directly, not the `sync` index (which command tests mock). Pass the `stored`
-  arg to `readGoogleTasksConfig` in tests so the real `~/.config/planos/google-tasks.json` is never read; login
+  arg to `readGoogleTasksConfig` in tests. Engine tests use `createGoogleTasksAdapter` with an in-memory fake
+  `GoogleTasksClient` (`tests/integration/sync-engine.test.ts`). Bun auto-loads `.env` (incl. `bun test`) — never
+  build an adapter from env/config in tests so the real `~/.config/planos/google-tasks.json` is never read; login
   tests inject `openUrl` that plays the browser by hitting the loopback redirect
 
 ## TypeScript quirks
